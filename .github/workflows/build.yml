@@ -36,30 +36,21 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # ── Fix themes.xml — always overwrite to avoid stale parent references ──
-      - name: Fix themes.xml
+      - name: Overwrite all broken resource files
         run: |
-          cat > app/src/main/res/values/themes.xml << 'THEMES'
-          <resources>
-              <style name="Theme.AutovozLoader" />
-          </resources>
-          THEMES
+          mkdir -p app/src/main/res/values
+          printf '<resources>\n    <style name="Theme.AutovozLoader" />\n</resources>\n' \
+            > app/src/main/res/values/themes.xml
+          sed -i 's|android:theme="@style/[^"]*"|android:theme="@style/Theme.AutovozLoader"|g' \
+            app/src/main/AndroidManifest.xml
+          echo "=== themes.xml ===" && cat app/src/main/res/values/themes.xml
+          echo "=== Manifest theme ===" && grep "theme" app/src/main/AndroidManifest.xml
 
-      # ── Fix app/build.gradle — remove any bad dependencies ──
-      - name: Fix build.gradle
+      - name: Clean bad dependencies from build.gradle
         run: |
-          python3 - << 'PY'
-          import re
-          with open("app/build.gradle", "r") as f:
-              content = f.read()
-          # Remove itextpdf and kotlinx-serialization if present
-          content = re.sub(r".*itextpdf.*\n", "", content)
-          content = re.sub(r".*kotlinx-serialization-json.*\n", "", content)
-          content = re.sub(r".*appcompat.*\n", "", content)
-          with open("app/build.gradle", "w") as f:
-              f.write(content)
-          print("build.gradle cleaned")
-          PY
+          sed -i '/itextpdf/d' app/build.gradle
+          sed -i '/kotlinx-serialization-json/d' app/build.gradle
+          sed -i '/appcompat/d' app/build.gradle
 
       - name: Cache Gradle packages
         uses: actions/cache@v4
