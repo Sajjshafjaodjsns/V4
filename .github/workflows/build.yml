@@ -36,32 +36,6 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Overwrite all broken resource files
-        run: |
-          mkdir -p app/src/main/res/values
-          printf '<resources>\n    <style name="Theme.AutovozLoader" />\n</resources>\n' \
-            > app/src/main/res/values/themes.xml
-          sed -i 's|android:theme="@style/[^"]*"|android:theme="@style/Theme.AutovozLoader"|g' \
-            app/src/main/AndroidManifest.xml
-          echo "=== themes.xml ===" && cat app/src/main/res/values/themes.xml
-          echo "=== Manifest theme ===" && grep "theme" app/src/main/AndroidManifest.xml
-
-      - name: Clean bad dependencies from build.gradle
-        run: |
-          sed -i '/itextpdf/d' app/build.gradle
-          sed -i '/kotlinx-serialization-json/d' app/build.gradle
-          sed -i '/appcompat/d' app/build.gradle
-
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
       - name: Build Debug APK
         run: ./gradlew assembleDebug --stacktrace
 
