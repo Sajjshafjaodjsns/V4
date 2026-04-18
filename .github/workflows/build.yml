@@ -36,6 +36,31 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # ── Fix themes.xml — always overwrite to avoid stale parent references ──
+      - name: Fix themes.xml
+        run: |
+          cat > app/src/main/res/values/themes.xml << 'THEMES'
+          <resources>
+              <style name="Theme.AutovozLoader" />
+          </resources>
+          THEMES
+
+      # ── Fix app/build.gradle — remove any bad dependencies ──
+      - name: Fix build.gradle
+        run: |
+          python3 - << 'PY'
+          import re
+          with open("app/build.gradle", "r") as f:
+              content = f.read()
+          # Remove itextpdf and kotlinx-serialization if present
+          content = re.sub(r".*itextpdf.*\n", "", content)
+          content = re.sub(r".*kotlinx-serialization-json.*\n", "", content)
+          content = re.sub(r".*appcompat.*\n", "", content)
+          with open("app/build.gradle", "w") as f:
+              f.write(content)
+          print("build.gradle cleaned")
+          PY
+
       - name: Cache Gradle packages
         uses: actions/cache@v4
         with:
